@@ -30,6 +30,9 @@
   // Track which token index the pointer went down on (for per-token tooltips)
   let pointerTokenIndex = -1
 
+  // ── Per-token swipe state
+  let swipeStartY = []
+
   // ── Desktop hover ─────────────────────────────────────────────
   function handleTokenMouseEnter(i) {
     const entry = getGlossaryEntry(tokens[i])
@@ -115,6 +118,29 @@
       doubleTapTimer = setTimeout(() => { doubleTapTimer = null; onSeek?.() }, 280)
     }
   }
+
+  function handleTokenPointerDown(e, i) {
+    if (e.pointerType === 'mouse') return
+    swipeStartY[i] = e.clientY
+  }
+
+  function handleTokenPointerUp(e, i) {
+    if (e.pointerType === 'mouse') return
+    const startY = swipeStartY[i]
+    swipeStartY[i] = undefined
+    if (typeof startY === 'number') {
+      const dy = startY - e.clientY
+      if (dy > 30) { // swipe up
+        const entry = getGlossaryEntry(tokens[i])
+        if (entry) {
+          tooltipIndex = i
+          if (tooltipTimer) clearTimeout(tooltipTimer)
+          tooltipTimer = setTimeout(() => { tooltipIndex = -1 }, 2500)
+        }
+        return
+      }
+    }
+  }
 </script>
 
 <span
@@ -135,6 +161,8 @@
     data-token-index={i}
     onmouseenter={() => handleTokenMouseEnter(i)}
     onmouseleave={handleTokenMouseLeave}
+    onpointerdown={(e) => handleTokenPointerDown(e, i)}
+    onpointerup={(e) => handleTokenPointerUp(e, i)}
   >{token}{#if tooltipIndex === i}
       <span class="tooltip">
         {#if getGlossaryEntry(token)?.hint}<span class="hint">{getGlossaryEntry(token).hint}</span>{/if}
