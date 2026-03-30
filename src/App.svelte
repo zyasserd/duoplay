@@ -29,14 +29,14 @@
   // reflectorKey: "sentenceIdx:wordIdx" of the reflector word, or null
   let reflectorKey = $state(null)
 
-  // Flat list of all words with timestamps + keys + endT (start of next word, or sentence end)
+  // Flat list of all phrases with timestamps + keys + endT
   let allWords = $derived(() => {
     const out = []
     for (let si = 0; si < sentences.length; si++) {
       const s = sentences[si]
-      for (let wi = 0; wi < s.words.length; wi++) {
-        const nextT = s.words[wi + 1]?.t ?? s.end ?? s.words[wi].t + 0.5
-        out.push({ key: `${si}:${wi}`, t: s.words[wi].t, endT: nextT })
+      for (let pi = 0; pi < s.phrases.length; pi++) {
+        const nextT = s.phrases[pi + 1]?.t ?? s.end ?? s.phrases[pi].t + 0.5
+        out.push({ key: `${si}:${pi}`, t: s.phrases[pi].t, endT: nextT })
       }
     }
     return out
@@ -58,16 +58,17 @@
     return idx
   })
 
-  let activeWordIndex = $derived(() => {
+  // The timestamp of the currently active phrase
+  let activeT = $derived(() => {
     const si = activeSentenceIndex()
     if (si < 0) return -1
-    const words = sentences[si].words
-    let idx = -1
-    for (let i = 0; i < words.length; i++) {
-      if (currentTime >= words[i].t) idx = i
+    const phrases = sentences[si].phrases
+    let t = -1
+    for (let i = 0; i < phrases.length; i++) {
+      if (currentTime >= phrases[i].t) t = phrases[i].t
       else break
     }
-    return idx
+    return t
   })
 
   // ── Event handlers ─────────────────────────────────────────────
@@ -220,7 +221,7 @@
           translation={translations()[i] ?? null}
           glossary={story.glossary ?? {}}
           isActive={activeSentenceIndex() === i}
-          activeWordIndex={activeSentenceIndex() === i ? activeWordIndex() : -1}
+          activeT={activeSentenceIndex() === i ? activeT() : -1}
           {reflectorKey}
           sentenceIndex={i}
           onSeek={seekTo}

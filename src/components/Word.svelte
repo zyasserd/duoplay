@@ -7,13 +7,7 @@
    * @prop {() => void} onSeek - called on tap/click: seek+play from this word
    * @prop {() => void} onToggleReflector - called on double-tap or right-click
    */
-  let { text, active = false, isReflector = false, glossaryEntry = null, onSeek, onToggleReflector } = $props()
-
-  // Split text into [prefix, core, suffix] so highlight/underline only wraps the core
-  let parts = $derived(() => {
-    const m = text.match(/^([\s\p{P}]*)(.*?)([\s\p{P}]*)$/su)
-    return m ? [m[1], m[2], m[3]] : ['', text, '']
-  })
+  let { text, active = false, isReflector = false, glossaryEntry = null, trailingSpace = false, onSeek, onToggleReflector } = $props()
 
   let showTooltip = $state(false)
 
@@ -121,12 +115,12 @@
   onmouseenter={handleMouseEnter}
   onmouseleave={handleMouseLeave}
   onkeydown={(e) => { if (e.key === 'Enter') onSeek?.(); if (e.key === 'r') onToggleReflector?.() }}
->{parts()[0]}<span
+><span
     class="word"
     class:active
     class:reflector={isReflector}
     class:has-gloss={!!glossaryEntry}
-  >{parts()[1]}{#if isReflector}<span class="reflector-mark" aria-label="loop reflector">↩</span>{/if}</span>{parts()[2]}
+  >{text}{#if trailingSpace}{' '}{/if}{#if isReflector}<span class="reflector-mark" aria-label="loop reflector">↩</span>{/if}</span>
   {#if showTooltip && glossaryEntry}
     <span class="tooltip">
       {#if glossaryEntry.hint}
@@ -155,7 +149,7 @@
     display: inline;
     border-radius: 3px;
     transition: background 0.1s, color 0.1s;
-    padding: 0 1px;
+    padding: 1px 2px;
   }
 
   .word.has-gloss {

@@ -1,24 +1,12 @@
 <script>
-  import Word from './Word.svelte'
-  import { stripPunctuation } from '../lib/parseStory.js'
+  import Phrase from './Phrase.svelte'
 
-  /**
-   * @prop {{ start: number, end: number, words: {text: string, t: number}[] }} sentence
-   * @prop {string|null} translation
-   * @prop {Record<string, {hint?: string, phonetic?: string}>} glossary
-   * @prop {boolean} isActive - whether this sentence contains the currently playing word
-   * @prop {number} activeWordIndex - index of currently highlighted word (-1 if none)
-   * @prop {string|null} reflectorKey - key of the word that is the reflector (sentenceIdx:wordIdx)
-   * @prop {(t: number) => void} onSeek - seek+play to a timestamp
-   * @prop {(key: string) => void} onToggleReflector - toggle reflector on a word key
-   * @prop {number} sentenceIndex
-   */
   let {
     sentence,
     translation = null,
     glossary = {},
     isActive = false,
-    activeWordIndex = -1,
+    activeT = -1,
     reflectorKey = null,
     onSeek,
     onToggleReflector,
@@ -27,28 +15,22 @@
 
   let showTranslation = $state(false)
 
-  function getGlossaryEntry(text) {
-    const key = stripPunctuation(text)
-    // try exact key first, then lowercase key (handles mixed-case glossary entries)
-    return glossary[key] ?? glossary[key.toLowerCase()] ?? null
-  }
-
-  function wordKey(wordIndex) {
-    return `${sentenceIndex}:${wordIndex}`
+  function phraseKey(phraseIndex) {
+    return `${sentenceIndex}:${phraseIndex}`
   }
 </script>
 
 <div class="sentence" class:active={isActive}>
   <p class="text">
-    {#each sentence.words as word, i}
-      <Word
-        text={word.text}
-        active={isActive && activeWordIndex === i}
-        isReflector={reflectorKey === wordKey(i)}
-        glossaryEntry={getGlossaryEntry(word.text)}
-        onSeek={() => onSeek?.(word.t)}
-        onToggleReflector={() => onToggleReflector?.(wordKey(i))}
-      />
+    {#each sentence.phrases as phrase, i}
+      <Phrase
+        tokens={phrase.tokens}
+        active={isActive && phrase.t === activeT}
+        isReflector={reflectorKey === phraseKey(i)}
+        {glossary}
+        onSeek={() => onSeek?.(phrase.t)}
+        onToggleReflector={() => onToggleReflector?.(phraseKey(i))}
+      />{i < sentence.phrases.length - 1 ? ' ' : ''}
     {/each}
   </p>
 

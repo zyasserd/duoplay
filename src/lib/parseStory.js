@@ -1,17 +1,20 @@
 /**
  * Parse a timed text string into an array of sentences.
  * Each sentence is a newline-delimited line of the form:
- *   [start]word chunk[t]word chunk[t]...[end]
+ *   [start]phrase chunk[t]phrase chunk[t]...[end]
  *
  * Returns:
  * [
  *   {
  *     start: number,
- *     end: number,
- *     words: [{ text: string, t: number }, ...]
+ *     end: number|null,
+ *     phrases: [{ t: number, tokens: string[] }, ...]
  *   },
  *   ...
  * ]
+ *
+ * Each phrase is a timestamp-delimited chunk — the unit for seeking, reflector, highlighting.
+ * tokens are the individual space-separated words within a phrase — the unit for glossary hints.
  */
 export function parseText(text) {
   const TOKEN = /\[(\d+(?:\.\d+)?)\]/g
@@ -21,33 +24,30 @@ export function parseText(text) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      // Split into alternating [timestamp, chunk, timestamp, chunk, ..., timestamp]
       const parts = line.split(TOKEN)
       // parts = ['', t0, chunk0, t1, chunk1, ..., tN, '']
-      // odd indices are timestamps, even are text chunks
 
-      const words = []
+      const phrases = []
       let start = null
       let end = null
 
       for (let i = 0; i < parts.length; i++) {
         if (i % 2 === 1) {
-          // timestamp
           const t = parseFloat(parts[i])
           const chunk = parts[i + 1] ?? ''
           if (start === null) start = t
           if (chunk.trim() === '') {
-            // trailing timestamp = sentence end
             end = t
           } else {
-            words.push({ text: chunk, t })
+            const tokens = chunk.trim().split(/\s+/).filter(Boolean)
+            phrases.push({ t, tokens })
           }
         }
       }
 
-      return { start, end, words }
+      return { start, end, phrases }
     })
-    .filter((s) => s.words.length > 0)
+    .filter((s) => s.phrases.length > 0)
 }
 
 /**

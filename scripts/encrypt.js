@@ -18,7 +18,7 @@ import { webcrypto } from 'crypto'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-const { subtle, getRandomValues } = webcrypto
+const subtle = webcrypto.subtle
 
 const PBKDF2_ITERATIONS = 100_000
 const SALT_BYTES = 16
@@ -42,8 +42,8 @@ async function deriveKey(password, salt) {
 }
 
 async function encryptBuffer(buffer, password) {
-  const salt = getRandomValues(new Uint8Array(SALT_BYTES))
-  const iv = getRandomValues(new Uint8Array(IV_BYTES))
+  const salt = webcrypto.getRandomValues(new Uint8Array(SALT_BYTES))
+  const iv = webcrypto.getRandomValues(new Uint8Array(IV_BYTES))
   const key = await deriveKey(password, salt)
   const ciphertext = await subtle.encrypt({ name: 'AES-GCM', iv }, key, buffer)
   const result = new Uint8Array(SALT_BYTES + IV_BYTES + ciphertext.byteLength)
