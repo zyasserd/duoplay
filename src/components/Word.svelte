@@ -17,16 +17,15 @@
 
   let showTooltip = $state(false)
 
-  // Timers
-  let longPressTimer = null   // fires hint on long press
-  let doubleTapTimer = null   // window for second tap to count as double-tap
-  let longPressFired = false  // prevent click from firing after long press
-  let lastPointerType = 'mouse' // track touch vs mouse to suppress fake mouseenter on mobile
+  // Timers & state
+  let longPressTimer = null
+  let doubleTapTimer = null
+  let pointerDownTime = 0       // timestamp of pointerdown, to detect long press on pointerup
+  let isLongPress = false       // was the last touch a long press?
 
   // ── Desktop: hover shows tooltip ──────────────────────────────
   function handleMouseEnter() {
     if (!glossaryEntry) return
-    if (lastPointerType !== 'mouse') return  // suppress fake mouseenter fired by touch
     showTooltip = true
   }
 
@@ -43,14 +42,14 @@
 
   // ── Touch / pointer logic ─────────────────────────────────────
   function handlePointerDown(e) {
-    lastPointerType = e.pointerType
-    // Only handle primary button / touch
-    if (e.pointerType === 'mouse' && e.button !== 0) return
-    longPressFired = false
+    if (e.pointerType === 'mouse') return   // mouse handled by click + contextmenu
+    e.preventDefault()                      // prevents mouseenter / click from firing on touch
+    e.stopPropagation()
+    isLongPress = false
+    pointerDownTime = Date.now()
     longPressTimer = setTimeout(() => {
-      longPressFired = true
+      isLongPress = true
       longPressTimer = null
-      // Show hint tooltip; hide after 2.5s
       if (glossaryEntry) {
         showTooltip = true
         setTimeout(() => { showTooltip = false }, 2500)
@@ -58,39 +57,50 @@
     }, 450)
   }
 
-  function handlePointerUp() {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer)
-      longPressTimer = null
-    }
-  }
-
-  function handlePointerCancel() {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer)
-      longPressTimer = null
-    }
-    longPressFired = false
-  }
-
-  // click fires after pointerup on both mouse and touch
-  function handleClick(e) {
+  function handlePointerUp(e) {
+    if (e.pointerType === 'mouse') return
     e.preventDefault()
     e.stopPropagation()
-
-    // Long press already handled — ignore this click
-    if (longPressFired) {
-      longPressFired = false
-      return
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      longPressTimer = null
     }
-
+    if (isLongPress) {
+      isLongPress = false
+      return   // long press done, don't seek or reflector
+    }
+    // Short tap — check for double-tap
     if (doubleTapTimer) {
-      // Second tap within window → double-tap → reflector
       clearTimeout(doubleTapTimer)
       doubleTapTimer = null
       onToggleReflector?.()
     } else {
-      // First tap — wait briefly for possible second tap before seeking
+      doubleTapTimer = setTimeout(() => {
+        doubleTapTimer = null
+        onSeek?.()
+      }, 280)
+    }
+  }
+
+  function handlePointerCancel(e) {
+    if (e.pointerType === 'mouse') return
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      longPressTimer = null
+    }
+    isLongPress = false
+  }
+
+  // ── Mouse click (desktop only — touch is handled above) ───────
+  function handleClick(e) {
+    if (e.pointerType === 'touch') return   // guard: should never reach here from touch
+    e.preventDefault()
+    e.stopPropagation()
+    if (doubleTapTimer) {
+      clearTimeout(doubleTapTimer)
+      doubleTapTimer = null
+      onToggleReflector?.()
+    } else {
       doubleTapTimer = setTimeout(() => {
         doubleTapTimer = null
         onSeek?.()
@@ -137,6 +147,7 @@
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
+    touch-action: none;
   }
 
   .word {
