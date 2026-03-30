@@ -21,10 +21,12 @@
   let longPressTimer = null   // fires hint on long press
   let doubleTapTimer = null   // window for second tap to count as double-tap
   let longPressFired = false  // prevent click from firing after long press
+  let lastPointerType = 'mouse' // track touch vs mouse to suppress fake mouseenter on mobile
 
   // ── Desktop: hover shows tooltip ──────────────────────────────
   function handleMouseEnter() {
     if (!glossaryEntry) return
+    if (lastPointerType !== 'mouse') return  // suppress fake mouseenter fired by touch
     showTooltip = true
   }
 
@@ -40,8 +42,8 @@
   }
 
   // ── Touch / pointer logic ─────────────────────────────────────
-  // pointerdown: start long-press timer
   function handlePointerDown(e) {
+    lastPointerType = e.pointerType
     // Only handle primary button / touch
     if (e.pointerType === 'mouse' && e.button !== 0) return
     longPressFired = false
@@ -88,7 +90,7 @@
       doubleTapTimer = null
       onToggleReflector?.()
     } else {
-      // First tap — wait briefly for possible second tap
+      // First tap — wait briefly for possible second tap before seeking
       doubleTapTimer = setTimeout(() => {
         doubleTapTimer = null
         onSeek?.()
@@ -134,6 +136,7 @@
     cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
 
   .word {
