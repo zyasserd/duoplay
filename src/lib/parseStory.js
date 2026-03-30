@@ -54,7 +54,10 @@ export function parseText(text) {
  * Strip punctuation from a word chunk to use as glossary lookup key.
  */
 export function stripPunctuation(text) {
-  // Remove common punctuation, including CJK and Western
+  // Remove common punctuation, including CJK and Western; lowercase for case-insensitive lookup
   // eslint-disable-next-line no-misleading-character-class
-  return text.replace(/[\s.,!?;:\u3001\u3002\uff01\uff1f\uff1b\uff1a\u2026\u2014\u300c\u300d\u300e\u300f\u3010\u3011\u300a\u300b\u201c\u201d\u2018\u2019]+/g, '').trim()
+  return text
+    .replace(/[\s.,!?;:\u3001\u3002\uff01\uff1f\uff1b\uff1a\u2026\u2014\u300c\u300d\u300e\u300f\u3010\u3011\u300a\u300b\u201c\u201d\u2018\u2019]+/g, '')
+    .trim()
+    .toLowerCase()
 }

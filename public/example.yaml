@@ -1,0 +1,48 @@
+title: Miguel Hache Intro
+audio: https://upload.wikimedia.org/wikipedia/commons/e/e0/Miguel_Hache_-_voice.ogg
+
+text: |
+  [0.0]Hola,[0.25]soy Miguel Hernández,[1.19]
+  [1.19]más conocido[1.93]como Miguel Hache.[2.76]
+  [4.05]Me dedico a hacer fallas,[5.26]ilustración,[5.83]
+  [5.83]murales,[6.35]títeres[6.88]y lo que surja[7.83]
+  [8.26]Nací en Valencia[9.12]en 1984.[10.71]
+
+translation: |
+  Hi, I'm Miguel Hernández.
+  Better known as Miguel Hache.
+  I dedicate myself to making fallas and illustration.
+  Murals, puppets, and whatever comes up.
+  I was born in Valencia in 1984.
+
+glossary:
+  hola:
+    hint: hello
+    phonetic: |
+      'ola
+  soy:
+    hint: I am
+  más:
+    hint: more / most
+  conocido:
+    hint: known
+  como:
+    hint: as / like
+  me dedico:
+    hint: I dedicate myself / I work in
+  hacer:
+    hint: to make / to do
+  fallas:
+    hint: traditional Valencian festival sculptures
+  ilustración:
+    hint: illustration
+  murales:
+    hint: murals
+  títeres:
+    hint: puppets
+  surja:
+    hint: comes up / arises
+  nací:
+    hint: I was born
+  valencia:
+    hint: city in Spain

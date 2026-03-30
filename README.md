@@ -81,6 +81,70 @@ glossary:
 
 ---
 
+---
+
+## Encrypted stories (`?locked=`)
+
+For stories you want to host publicly but only share with people who have the password, use the `?locked=` flow.
+
+### How it works
+
+Files are encrypted with **AES-GCM 256-bit** (key derived via PBKDF2) entirely in-browser using the WebCrypto API. The encrypted blobs live in your repo — unreadable without the key. The password travels in the URL so the full link is self-contained.
+
+### 1. Prepare your story folder
+
+```
+your-story/
+  story.yaml      ← plain YAML (same format as above, but audio field is just the filename)
+  audio.mp3       ← audio file
+```
+
+The `audio` field in your YAML should be the filename with `.enc` appended — what it will be called after encryption:
+
+```yaml
+title: My Secret Story
+audio: audio.mp3.enc
+text: |
+  [0.0]Hello[1.2]world.[2.5]
+```
+
+### 2. Encrypt
+
+```sh
+node scripts/encrypt.js <label> <yaml-file> <audio-file> <password>
+```
+
+Example:
+```sh
+node scripts/encrypt.js good-morning story.yaml audio.mp3 mysecret
+```
+
+This outputs:
+```
+public/stories/good-morning/
+  story.enc
+  audio.mp3.enc
+```
+
+Commit these files to your repo.
+
+### 3. Share the link
+
+```
+https://your-pages-url/?locked=good-morning&password=mysecret
+```
+
+The player will:
+1. Fetch `./stories/good-morning/story.enc` and decrypt it with the password
+2. Read the `audio` field from the decrypted YAML (`audio.mp3.enc`)
+3. Fetch + decrypt `./stories/good-morning/audio.mp3.enc` → feed to the audio player as a blob URL
+
+### Wrong password
+
+AES-GCM authentication will fail and the player shows an error message. Nothing is leaked.
+
+---
+
 ## Development
 
 ```sh
