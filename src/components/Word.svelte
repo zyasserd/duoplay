@@ -4,41 +4,55 @@
    * @prop {boolean} active - whether this word is currently being played
    * @prop {boolean} isReflector - whether this word is the loop reflector
    * @prop {object|null} glossaryEntry - { hint, phonetic } or null
-   * @prop {() => void} onSeek - called on left-click: seek+play from this word
-   * @prop {() => void} onToggleReflector - called on right-click/long-press
+   * @prop {() => void} onSeek - called on tap/click: seek+play from this word
+   * @prop {() => void} onToggleReflector - called on double-tap or right-click
    */
   let { text, active = false, isReflector = false, glossaryEntry = null, onSeek, onToggleReflector } = $props()
 
   // Split text into [prefix, core, suffix] so highlight/underline only wraps the core
-  // e.g. "murales," → ['', 'murales', ',']
-  // e.g. " títeres" → [' ', 'títeres', '']
   let parts = $derived(() => {
     const m = text.match(/^([\s\p{P}]*)(.*?)([\s\p{P}]*)$/su)
     return m ? [m[1], m[2], m[3]] : ['', text, '']
   })
 
   let showTooltip = $state(false)
-  let longPressTimer = null
 
-  function handleClick(e) {
-    e.preventDefault()
-    e.stopPropagation()
-    showTooltip = false
-    onSeek?.()
+  // Timers
+  let longPressTimer = null   // fires hint on long press
+  let doubleTapTimer = null   // window for second tap to count as double-tap
+  let longPressFired = false  // prevent click from firing after long press
+
+  // ── Desktop: hover shows tooltip ──────────────────────────────
+  function handleMouseEnter() {
+    if (!glossaryEntry) return
+    showTooltip = true
   }
 
+  function handleMouseLeave() {
+    showTooltip = false
+  }
+
+  // ── Desktop: right-click = reflector ──────────────────────────
   function handleContextMenu(e) {
     e.preventDefault()
     e.stopPropagation()
     onToggleReflector?.()
   }
 
-  // Long-press for mobile (>450ms)
+  // ── Touch / pointer logic ─────────────────────────────────────
+  // pointerdown: start long-press timer
   function handlePointerDown(e) {
-    if (e.button !== 0) return
+    // Only handle primary button / touch
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    longPressFired = false
     longPressTimer = setTimeout(() => {
+      longPressFired = true
       longPressTimer = null
-      onToggleReflector?.()
+      // Show hint tooltip; hide after 2.5s
+      if (glossaryEntry) {
+        showTooltip = true
+        setTimeout(() => { showTooltip = false }, 2500)
+      }
     }, 450)
   }
 
@@ -49,17 +63,37 @@
     }
   }
 
-  function handlePointerLeave() {
+  function handlePointerCancel() {
     if (longPressTimer) {
       clearTimeout(longPressTimer)
       longPressTimer = null
     }
-    showTooltip = false
+    longPressFired = false
   }
 
-  function handleMouseEnter() {
-    if (!glossaryEntry) return
-    showTooltip = true
+  // click fires after pointerup on both mouse and touch
+  function handleClick(e) {
+    e.preventDefault()
+    e.stopPropagation()
+
+    // Long press already handled — ignore this click
+    if (longPressFired) {
+      longPressFired = false
+      return
+    }
+
+    if (doubleTapTimer) {
+      // Second tap within window → double-tap → reflector
+      clearTimeout(doubleTapTimer)
+      doubleTapTimer = null
+      onToggleReflector?.()
+    } else {
+      // First tap — wait briefly for possible second tap
+      doubleTapTimer = setTimeout(() => {
+        doubleTapTimer = null
+        onSeek?.()
+      }, 280)
+    }
   }
 </script>
 
@@ -71,9 +105,10 @@
   oncontextmenu={handleContextMenu}
   onpointerdown={handlePointerDown}
   onpointerup={handlePointerUp}
-  onpointerleave={handlePointerLeave}
+  onpointercancel={handlePointerCancel}
   onmouseenter={handleMouseEnter}
-  onkeydown={(e) => e.key === 'Enter' && onSeek?.()}
+  onmouseleave={handleMouseLeave}
+  onkeydown={(e) => { if (e.key === 'Enter') onSeek?.(); if (e.key === 'r') onToggleReflector?.() }}
 >{parts()[0]}<span
     class="word"
     class:active
